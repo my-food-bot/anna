@@ -5,7 +5,7 @@ import sys
 from aiogram import Bot, Dispatcher
 from aiohttp import web
 
-TOKEN = "9030937137:AAEepbyNite1Sgje1qX9J3q5c3vGZOKmT5O"
+TOKEN = "8982225070:AAHP4HB2yg6_m1pgldhtaxJNHBdJ_F0XDrk"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
