@@ -227,13 +227,22 @@ async def show_analytics(message: types.Message):
         resp += f"День {i} ({day['day_type']}): {day['cals']} ккал (Б:{day['p']} Ж:{day['f']} У:{day['c']})\n"
     await message.answer(resp)
 
-async def handle_ping(request):
-    return web.Response(text="Bot is alive!")
-
-async def start_web_server():
+# Функция запуска веб-сервера aiohttp для Render
+async def web_server_runner():
     app = web.Application()
-    app.router.add_get('/', handle_ping)
+    app.router.add_get("/", lambda r: web.Response(text="Bot is alive!"))
     runner = web.AppRunner(app)
     await runner.setup()
     port = int(os.environ.get("PORT", 8080))
-    site = web
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    print(f"Web server started on port {port}")
+
+async def main():
+    # Запускаем и веб-сервер, и поллинг телеграма параллельно
+    await web_server_runner()
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    asyncio.run(main())
