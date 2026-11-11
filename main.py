@@ -2,15 +2,21 @@ import asyncio
 import logging
 import os
 import sys
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
 from aiohttp import web
 
-TOKEN = "9030937137:AAEEpbyNite1SgjelqX9J3q5c3vGZOKmT5o"
+TOKEN = "9030937137:AAEepbyNite1Sgje1qX9J3q5c3vGZOKmT5O"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Простейший веб-сервер для обмана Render Port Scan
+# Обработчик команды /start
+@dp.message(Command("start"))
+async def cmd_start(message: types.Message):
+    await message.answer("Привет! Я твой бот для подсчета калорий и питания. Напиши мне что-нибудь!")
+
+# Веб-сервер для поддержки работы порта на Render
 async def handle_ping(request):
     return web.Response(text="Bot is alive!")
 
@@ -24,7 +30,6 @@ async def start_web_server():
     await site.start()
 
 async def main():
-    # Запускаем веб-сервер и опрос бота одновременно
     await start_web_server()
     await dp.start_polling(bot)
 
