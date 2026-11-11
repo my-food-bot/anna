@@ -10,13 +10,16 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiohttp import web
 
+# Токен вашего бота с правильным окончанием
 TOKEN = "9030937137:AAEEpbyNite1SgjelqX9J3q5c3vGZOKmT5o"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 
+# Временное хранилище истории питания пользователей
 user_history = {}
 
+# Состояния конструктора
 class MealState(StatesGroup):
     waiting_for_training_day = State()
     choosing_meal_num = State()
@@ -24,33 +27,34 @@ class MealState(StatesGroup):
     choosing_carb = State()
     choosing_fat = State()
 
+# Базы данных продуктов с порциями «на глаз» и КБЖУ
 PROTEINS = {
-    "Куриная грудка (~200г)": {"cals": 220, "p": 46, "f": 4, "c": 0},
-    "Индейка (~200г)": {"cals": 230, "p": 44, "f": 5, "c": 0},
-    "Говядина (~180г)": {"cals": 310, "p": 38, "f": 16, "c": 0},
-    "Рыба / Лосось (~200г)": {"cals": 280, "p": 36, "f": 14, "c": 0},
-    "Тунец (консерв. в с/с, ~150г)": {"cals": 150, "p": 33, "f": 2, "c": 0},
-    "Минтай (отварной/запеч., ~220г)": {"cals": 160, "p": 35, "f": 2, "c": 0},
-    "Яйца (3 крупных шт.)": {"cals": 210, "p": 18, "f": 15, "c": 1},
-    "Творог (~250г)": {"cals": 250, "p": 40, "f": 5, "c": 8},
-    "Протеиновый изолят (1 мерная ложка)": {"cals": 110, "p": 25, "f": 0, "c": 1},
+    "🥩 Куриная грудка (~200г)": {"cals": 220, "p": 46, "f": 4, "c": 0},
+    "🦃 Индейка (~200г)": {"cals": 230, "p": 44, "f": 5, "c": 0},
+    "🥩 Говядина (~180г)": {"cals": 310, "p": 38, "f": 16, "c": 0},
+    "🐟 Рыба / Лосось (~200г)": {"cals": 280, "p": 36, "f": 14, "c": 0},
+    "🐟 Тунец (консерв. в с/с, ~150г)": {"cals": 150, "p": 33, "f": 2, "c": 0},
+    "🐟 Минтай (отварной/запеч., ~220г)": {"cals": 160, "p": 35, "f": 2, "c": 0},
+    "🥚 Яйца (3 крупных шт.)": {"cals": 210, "p": 18, "f": 15, "c": 1},
+    "🥛 Творог (~250г)": {"cals": 250, "p": 40, "f": 5, "c": 8},
+    "🥤 Протеиновый изолят (1 мерная ложка)": {"cals": 110, "p": 25, "f": 0, "c": 1},
 }
 
 CARBS = {
-    "Рис / Гречка (готовые, ~200г)": {"cals": 260, "p": 6, "f": 2, "c": 55},
-    "Макароны (готовые, ~200г)": {"cals": 280, "p": 8, "f": 2, "c": 52},
-    "Картофель отварной (~250г)": {"cals": 200, "p": 5, "f": 1, "c": 45},
-    "Картофель фри заморозка (в аэрогриле, ~150г)": {"cals": 240, "p": 3, "f": 8, "c": 38},
-    "Запеченный бэби-картофель (в аэрогриле, ~220г)": {"cals": 190, "p": 4, "f": 3, "c": 38},
-    "Пюре картофельное на молоке (~250г)": {"cals": 230, "p": 5, "f": 6, "c": 40},
-    "Хлеб цельнозерновой (2 куска)": {"cals": 140, "p": 6, "f": 2, "c": 24},
+    "🍚 Рис / Гречка (готовые, ~200г)": {"cals": 260, "p": 6, "f": 2, "c": 55},
+    "🍝 Макароны (готовые, ~200г)": {"cals": 280, "p": 8, "f": 2, "c": 52},
+    "🥔 Картофель отварной (~250г)": {"cals": 200, "p": 5, "f": 1, "c": 45},
+    "🍟 Картофель фри заморозка (в аэрогриле, ~150г)": {"cals": 240, "p": 3, "f": 8, "c": 38},
+    "🥔 Запеченный бэби-картофель (в аэрогриле, ~220г)": {"cals": 190, "p": 4, "f": 3, "c": 38},
+    "🥔 Пюре картофельное на молоке (~250г)": {"cals": 230, "p": 5, "f": 6, "c": 40},
+    "🍞 Хлеб цельнозерновой (2 куска)": {"cals": 140, "p": 6, "f": 2, "c": 24},
 }
 
 FATS_VEG = {
-    "Оливковое масло (1 ст.л.)": {"cals": 120, "p": 0, "f": 14, "c": 0},
-    "Авокадо (половинка, ~80г)": {"cals": 130, "p": 1, "f": 12, "c": 4},
-    "Орехи (горсть, ~30г)": {"cals": 180, "p": 5, "f": 16, "c": 5},
-    "Свежие овощи (салат без масла, миска)": {"cals": 40, "p": 2, "f": 0, "c": 8},
+    "🫒 Оливковое масло (1 ст.л.)": {"cals": 120, "p": 0, "f": 14, "c": 0},
+    "🥑 Авокадо (половинка, ~80г)": {"cals": 130, "p": 1, "f": 12, "c": 4},
+    "🥜 Орехи (горсть, ~30г)": {"cals": 180, "p": 5, "f": 16, "c": 5},
+    "🥗 Свежие овощи (салат без масла, миска)": {"cals": 40, "p": 2, "f": 0, "c": 8},
 }
 
 @dp.message(Command("start"))
@@ -62,9 +66,9 @@ async def cmd_start(message: types.Message, state: FSMContext):
     builder.adjust(1)
     
     await message.answer(
-        "Привет! Я твой быстрый конструктор питания.\n"
+        "👋 Привет! Я твой быстрый конструктор питания.\n"
         "У тебя все 3 приема пищи имеют одинаковый калораж — это упростит задачу!\n\n"
-        "Сначала ответь: **сегодня день тренировки?**",
+        "🎯 Сначала ответь: **сегодня день тренировки?**",
         reply_markup=builder.as_markup()
     )
     await state.set_state(MealState.waiting_for_training_day)
@@ -79,11 +83,11 @@ async def process_training_day(callback: types.CallbackQuery, state: FSMContext)
     builder = InlineKeyboardBuilder()
     for prod in PROTEINS.keys():
         builder.button(text=prod, callback_data=f"prot_{prod}")
-    builder.button(text="⬅️ Отмена", callback_data="cancel_action")
+    builder.button(text="❌ Отмена", callback_data="cancel_action")
     builder.adjust(1)
     
     await callback.message.edit_text(
-        f"Режим: **{day_type}**.\n\nДавай соберем **Прием пищи №1**.\nВыбери основной белок:",
+        f"⚡ Режим: **{day_type}**.\n\n🍽️ Давай соберем **Прием пищи №1**.\nВыбери основной белок:",
         reply_markup=builder.as_markup()
     )
     await state.set_state(MealState.choosing_protein)
@@ -101,7 +105,7 @@ async def process_protein(callback: types.CallbackQuery, state: FSMContext):
     builder.adjust(1)
     
     await callback.message.edit_text(
-        f"Белок: **{choice}** выбран ✅\nТеперь выбери гарнир / углеводы:",
+        f"✅ Белок: **{choice}** выбран!\n\n🥔 Теперь выбери гарнир / углеводы:",
         reply_markup=builder.as_markup()
     )
     await state.set_state(MealState.choosing_carb)
@@ -113,7 +117,7 @@ async def back_to_start(callback: types.CallbackQuery, state: FSMContext):
     builder.button(text="🏋️ Тренировочный день", callback_data="train_yes")
     builder.button(text="🛋️ День отдыха", callback_data="train_no")
     builder.adjust(1)
-    await callback.message.edit_text("Выбери день:", reply_markup=builder.as_markup())
+    await callback.message.edit_text("🎯 Выбери день:", reply_markup=builder.as_markup())
     await state.set_state(MealState.waiting_for_training_day)
     await callback.answer()
 
@@ -129,7 +133,7 @@ async def process_carb(callback: types.CallbackQuery, state: FSMContext):
     builder.adjust(1)
     
     await callback.message.edit_text(
-        f"Гарнир: **{choice}** выбран ✅\nВыбери жиры или овощи:",
+        f"✅ Гарнир: **{choice}** выбран!\n\n🥑 Выбери жиры или овощи:",
         reply_markup=builder.as_markup()
     )
     await state.set_state(MealState.choosing_fat)
@@ -140,9 +144,9 @@ async def back_to_protein(callback: types.CallbackQuery, state: FSMContext):
     builder = InlineKeyboardBuilder()
     for prod in PROTEINS.keys():
         builder.button(text=prod, callback_data=f"prot_{prod}")
-    builder.button(text="⬅️ Отмена", callback_data="cancel_action")
+    builder.button(text="❌ Отмена", callback_data="cancel_action")
     builder.adjust(1)
-    await callback.message.edit_text("Выбери основной белок:", reply_markup=builder.as_markup())
+    await callback.message.edit_text("🍽️ Выбери основной белок:", reply_markup=builder.as_markup())
     await state.set_state(MealState.choosing_protein)
     await callback.answer()
 
@@ -210,7 +214,7 @@ async def process_fat(callback: types.CallbackQuery, state: FSMContext):
             f"Калории: **{total_cals} ккал**\n"
             f"Белки: **{total_p}г** | Жиры: **{total_f}г** | Углеводы: **{total_c}г**\n"
             "════════════════════\n"
-            "💾 День сохранен! Напиши слово **анализ**, чтобы посмотреть статистику за последние дни."
+            "💾 День сохранен в историю! Напиши слово **анализ**, чтобы посмотреть статистику за последние дни."
         )
         await state.clear()
     
@@ -219,7 +223,7 @@ async def process_fat(callback: types.CallbackQuery, state: FSMContext):
 @dp.callback_query(F.data == "cancel_action")
 async def cancel_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
-    await callback.message.answer("Действие отменено. Нажми /start, чтобы начать заново.")
+    await callback.message.answer("❌ Действие отменено. Нажми /start, чтобы начать заново.")
     await callback.answer()
 
 @dp.message(F.text.lower().contains("анализ"))
@@ -227,14 +231,13 @@ async def show_analytics(message: types.Message):
     user_id = message.from_user.id
     history = user_history.get(user_id, [])
     if not history:
-        await message.answer("У меня пока нет сохраненных дней. Собери день через /start!")
+        await message.answer("⚠️ У меня пока нет сохраненных дней. Собери день через /start!")
         return
     resp = "📈 **Твоя аналитика питания:**\n\n"
     for i, day in enumerate(history[-5:], 1):
-        resp += f"День {i} ({day['day_type']}): {day['cals']} ккал (Б:{day['p']} Ж:{day['f']} У:{day['c']})\n"
+        resp += f"• День {i} ({day['day_type']}): **{day['cals']} ккал** (Б:{day['p']} Ж:{day['f']} У:{day['c']})\n"
     await message.answer(resp)
 
-# Функция запуска веб-сервера aiohttp для Render
 async def web_server_runner():
     app = web.Application()
     app.router.add_get("/", lambda r: web.Response(text="Bot is alive!"))
@@ -243,10 +246,8 @@ async def web_server_runner():
     port = int(os.environ.get("PORT", 8080))
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    print(f"Web server started on port {port}")
 
 async def main():
-    # Запускаем и веб-сервер, и поллинг телеграма параллельно
     await web_server_runner()
     await dp.start_polling(bot)
 
