@@ -10,7 +10,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiohttp import web
 
-TOKEN = "9030937137:AAEepbyNite1Sgje1qX9J3q5c3vGZOKmT5O"
+TOKEN = "9030937137:AAEepbyNite1Sgje1qX9J3q5c3vGZOKmT5o"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
