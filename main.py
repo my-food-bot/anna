@@ -4,7 +4,7 @@ import sys
 from aiogram import Bot, Dispatcher
 
 # Ваш токен
-TOKEN = "8982225070:AAGYrcuB69vBOPrTv3sCTe03VX3GTvIR1ww"
+TOKEN = "8982225070:AAHP4HB2yg6_m1pgldhtaxJNHBdJ_F0XDrk"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
