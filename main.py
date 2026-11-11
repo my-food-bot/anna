@@ -56,7 +56,7 @@ def back_keyboard():
     builder.button(text="⬅️ Назад / Отменить", callback_data="cancel_action")
     return builder.as_markup()
 
-@dp.message(Command("start"))
+@dp.message(Command("/start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
     builder = InlineKeyboardBuilder()
