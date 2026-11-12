@@ -28,29 +28,47 @@ class MealState(StatesGroup):
 TARGET_TRAIN = {"cals": 612, "p": 25, "f": 17, "c": 86}
 TARGET_REST = {"cals": 436, "p": 17, "f": 12, "c": 61}
 
+# Продукты для тренировочного дня (раздельно по позициям под цель)
 PROTEINS_TRAIN = {
-    "🥩 Куриная грудка / Индейка (порция под норму)": TARGET_TRAIN,
-    "🥩 Говядина / Лосось (порция под норму)": TARGET_TRAIN,
-    "🥤 Протеиновый изолят + добор": TARGET_TRAIN,
+    "🥩 Куриная грудка (~250г)": TARGET_TRAIN,
+    "🦃 Индейка (~250г)": TARGET_TRAIN,
+    "🥩 Говядина (~200г)": TARGET_TRAIN,
+    "🐟 Рыба / Лосось (~220г)": TARGET_TRAIN,
+    "🐟 Тунец (консерв., ~180г)": TARGET_TRAIN,
+    "🥤 Протеиновый изолят (1.5 мерн. ложки)": TARGET_TRAIN,
 }
 
 CARBS_TRAIN = {
-    "🍚 Рис / Гречка / Макароны (порция под норму)": TARGET_TRAIN,
-    "🥔 Картофель фри / Пюре (порция под норму)": TARGET_TRAIN,
+    "🍚 Рис / Гречка (готовые, ~250г)": TARGET_TRAIN,
+    "🍝 Макароны (готовые, ~250г)": TARGET_TRAIN,
+    "🥔 Картофель отварной (~300г)": TARGET_TRAIN,
+    "🍟 Картофель фри (аэрогриль, ~180г)": TARGET_TRAIN,
+    "🥔 Пюре картофельное на молоке (~300г)": TARGET_TRAIN,
 }
 
+# Продукты для дня отдыха (раздельно по позициям под нижнюю норму)
 PROTEINS_REST = {
-    "🐟 Минтай / Тунец (порция под нижнюю норму)": TARGET_REST,
-    "🥚 Яйца / Творог (порция под нижнюю норму)": TARGET_REST,
+    "🐟 Минтай (отварной/запеч., ~180г)": TARGET_REST,
+    "🐟 Тунец (консерв., ~130г)": TARGET_REST,
+    "🥚 Яйца (2 крупных шт.)": TARGET_REST,
+    "🥛 Творог (~180г)": TARGET_REST,
+    "🥩 Куриная грудка (~150г)": TARGET_REST,
+    "🦃 Индейка (~150г)": TARGET_REST,
 }
 
 CARBS_REST = {
-    "🥔 Запеченный бэби-картофель (порция под нижнюю норму)": TARGET_REST,
-    "🍞 Хлеб цельнозерновой / Рис (порция под нижнюю норму)": TARGET_REST,
+    "🥔 Запеченный бэби-картофель (аэрогриль, ~150г)": TARGET_REST,
+    "🍞 Хлеб цельнозерновой (1 кусок)": TARGET_REST,
+    "🍚 Рис / Гречка (готовые, ~130г)": TARGET_REST,
+    "🍝 Макароны (готовые, ~130г)": TARGET_REST,
 }
 
+# Жиры и овощи (раздельно)
 FATS_VEG = {
-    "🫒 Оливковое масло / Авокадо / Орехи": {"cals": 0, "p": 0, "f": 0, "c": 0},
+    "🫒 Оливковое масло (1 ч.л.)": {"cals": 0, "p": 0, "f": 0, "c": 0},
+    "🥑 Авокадо (четвертинка, ~40г)": {"cals": 0, "p": 0, "f": 0, "c": 0},
+    "🥜 Орехи (небольшая горсть, ~15г)": {"cals": 0, "p": 0, "f": 0, "c": 0},
+    "🥗 Свежие овощи (миска салата)": {"cals": 0, "p": 0, "f": 0, "c": 0},
 }
 
 @dp.message(Command("start"))
@@ -95,7 +113,7 @@ async def process_day_choice(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_text(
         f"⚡ Режим: **{day_name}**\n"
         f"🎯 Цель на 1 прием: Б: {target['p']}г | Ж: {target['f']}г | У: {target['c']}г ({target['cals']} ккал)\n\n"
-        f"🍽️ Собираем **Прием пищи №1**.\nВыбери белок:",
+        f"🍽️ Собираем **Прием пищи №1**.\nВыбери основной белок:",
         reply_markup=builder.as_markup()
     )
     await state.set_state(MealState.choosing_protein)
@@ -151,7 +169,7 @@ async def process_fat(callback: types.CallbackQuery, state: FSMContext):
     meal_f = target["f"]
     meal_uc = target["c"]
 
-    # Проверка отклонений на КАЖДЫЙ прием пищи (>10% или <10%)
+    # Проверка отклонений на КАЖДЫЙ прием пищи (±10%)
     target_meal_cals = target["cals"]
     lower_bound = target_meal_cals * 0.9
     upper_bound = target_meal_cals * 1.1
