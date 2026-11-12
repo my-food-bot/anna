@@ -19,7 +19,8 @@ user_history = {}
 
 class MealState(StatesGroup):
     waiting_for_day_type = State()
-    choosing_protein = State()
+    choosing_protein_category = State()
+    choosing_protein_item = State()
     choosing_carb = State()
     choosing_fat = State()
     waiting_for_analytics_period = State()
@@ -28,81 +29,120 @@ TARGET_TRAIN = {"cals": 612, "p": 25, "f": 17, "c": 86}
 TARGET_REST = {"cals": 436, "p": 17, "f": 12, "c": 61}
 ZERO_CARB = {"cals": 0, "p": 0, "f": 0, "c": 0}
 
-# Белки и основные блюда для Тренировочного дня
-PROTEINS_TRAIN = {
-    "p1": ("🥩 Куриная грудка / индейка запеч.", TARGET_TRAIN),
-    "p2": ("🍗 Куриные ножки в аэрогриле", TARGET_TRAIN),
-    "p3": ("🥩 Стейк из свинины (карбонад)", TARGET_TRAIN),
-    "p4": ("🍖 Свиные ребра запеченные", TARGET_TRAIN),
-    "p5": ("🐟 Минтай (тушеный/запеченный)", TARGET_TRAIN),
-    "p6": ("🦐 Креветки / морской коктейль", TARGET_TRAIN),
-    "p7": ("🐟 Семга с/с или Скумбрия х/к", TARGET_TRAIN),
-    "p8": ("🥛 Творог 5%", TARGET_TRAIN),
-    "p9": ("🥚 Яйца вареные / жареные", TARGET_TRAIN),
-    "p10": ("🧀 Сыр Сулугуни", TARGET_TRAIN),
-    "p11": ("🧀 Сыр Пармезан", TARGET_TRAIN),
-    "p12": ("🧀 Сыр Российский", TARGET_TRAIN),
-    "p13": ("🧀 Сыр Голландский", TARGET_TRAIN),
-    "p14": ("🧀 Сыр Моцарелла", TARGET_TRAIN),
-    "p15": ("🧀 Творожный сыр (Hochland/Almette)", TARGET_TRAIN),
-    "p16": ("🥤 Протеиновый изолят", TARGET_TRAIN),
+PROTEIN_CATEGORIES = {
+    "cat_fish": "🐟 Рыба и морепродукты",
+    "cat_meat": "🥩 Мясо и птица",
+    "cat_cheese": "🧀 Сыры",
+    "cat_dairy_eggs": "🥛 Молочка и яйца",
+    "cat_other": "🥤 Протеин / Изолят"
 }
 
-# Углеводы, гарниры и супы для Тренировочного дня
+# Наполнение категорий для ТРЕНИРОВОЧНОГО дня (цель ~612 ккал)
+PROTEINS_TRAIN_BY_CAT = {
+    "cat_fish": {
+        "pt_5": ("🐟 Минтай (тушеный/запеченный) (~300г)", {"cals": 220, "p": 48, "f": 3, "c": 0}),
+        "pt_6": ("🦐 Креветки отварные (~250г)", {"cals": 240, "p": 50, "f": 4, "c": 1}),
+        "pt_7": ("🦑 Морской коктейль (~260г)", {"cals": 220, "p": 45, "f": 3, "c": 2}),
+        "pt_8": ("🐟 Семга с/с (~180г)", {"cals": 360, "p": 36, "f": 24, "c": 0}),
+        "pt_9": ("🐟 Скумбрия х/к (~160г)", {"cals": 350, "p": 32, "f": 25, "c": 0}),
+        "pt_10": ("🐟 Тунец (консерв. в с/с) (~250г)", {"cals": 250, "p": 55, "f": 3, "c": 0}),
+    },
+    "cat_meat": {
+        "pt_1": ("🥩 Куриная грудка / индейка запеч. (~250г)", {"cals": 275, "p": 55, "f": 5, "c": 0}),
+        "pt_2": ("🍗 Куриные ножки (~220г)", {"cals": 350, "p": 40, "f": 20, "c": 0}),
+        "pt_3": ("🍗 Куриное бедро (~200г)", {"cals": 360, "p": 38, "f": 22, "c": 0}),
+        "pt_4": ("🥩 Свинина стейк (~180г)", {"cals": 380, "p": 36, "f": 25, "c": 0}),
+        "pt_5": ("🍢 Свинина шашлык (~170г)", {"cals": 390, "p": 34, "f": 27, "c": 0}),
+        "pt_6": ("🍲 Свинина тушеная (~180г)", {"cals": 370, "p": 35, "f": 24, "c": 0}),
+        "pt_7": ("🥩 Говядина гуляш (~200г)", {"cals": 330, "p": 42, "f": 17, "c": 0}),
+        "pt_8": ("🍖 Свиные ребра запеченные (~180г)", {"cals": 420, "p": 35, "f": 30, "c": 0}),
+    },
+    "cat_cheese": {
+        "pt_13": ("🧀 Сыр Сулугуни (~100г)", {"cals": 290, "p": 20, "f": 22, "c": 0}),
+        "pt_14": ("🧀 Сыр Пармезан (~80г)", {"cals": 320, "p": 28, "f": 22, "c": 0}),
+        "pt_15": ("🧀 Сыр Российский / Голландский (~90г)", {"cals": 330, "p": 22, "f": 26, "c": 0}),
+        "pt_16": ("🧀 Сыр Моцарелла (~110г)", {"cals": 280, "p": 20, "f": 20, "c": 2}),
+        "pt_17": ("🧀 Творожный сыр (Hochland/Almette) (~150г)", {"cals": 330, "p": 9, "f": 32, "c": 4}),
+    },
+    "cat_dairy_eggs": {
+        "pt_11": ("🥛 Творог 5% (~300г)", {"cals": 360, "p": 54, "f": 15, "c": 9}),
+        "pt_12": ("🥚 Яйца вареные / жареные (4 шт.)", {"cals": 280, "p": 24, "f": 20, "c": 2}),
+    },
+    "cat_other": {
+        "pt_18": ("🥤 Протеиновый изолят (2 мерн. ложки)", {"cals": 220, "p": 50, "f": 1, "c": 2}),
+    }
+}
+
+# Наполнение категорий для ДНЯ ОТДЫХА (цель ~436 ккал)
+PROTEINS_REST_BY_CAT = {
+    "cat_fish": {
+        "pr_1": ("🐟 Минтай (тушеный/запеченный) (~220г)", {"cals": 160, "p": 35, "f": 2, "c": 0}),
+        "pr_3": ("🦐 Креветки отварные (~180г)", {"cals": 170, "p": 36, "f": 3, "c": 1}),
+        "pr_4": ("🦑 Морской коктейль (~190г)", {"cals": 160, "p": 32, "f": 2, "c": 1}),
+        "pr_5": ("🐟 Семга с/с (~110г)", {"cals": 220, "p": 22, "f": 15, "c": 0}),
+        "pr_6": ("🐟 Скумбрия х/к (~100г)", {"cals": 220, "p": 20, "f": 16, "c": 0}),
+        "pr_7": ("🐟 Тунец (консерв. в с/с) (~180г)", {"cals": 180, "p": 40, "f": 2, "c": 0}),
+    },
+    "cat_meat": {
+        "pr_2": ("🥩 Куриная грудка / индейка запеч. (~160г)", {"cals": 180, "p": 35, "f": 3, "c": 0}),
+        "pr_3": ("🍗 Куриные ножки (~150г)", {"cals": 220, "p": 26, "f": 12, "c": 0}),
+        "pr_4": ("🍗 Куриное бедро (~130г)", {"cals": 230, "p": 24, "f": 14, "c": 0}),
+        "pr_5": ("🥩 Свинина стейк (~110г)", {"cals": 230, "p": 22, "f": 15, "c": 0}),
+        "pr_6": ("🍲 Свинина тушеная (~110г)", {"cals": 220, "p": 21, "f": 14, "c": 0}),
+        "pr_7": ("🥩 Говядина гуляш (~130г)", {"cals": 210, "p": 27, "f": 11, "c": 0}),
+    },
+    "cat_cheese": {
+        "pr_10": ("🧀 Сыр Сулугуни (~70г)", {"cals": 200, "p": 14, "f": 15, "c": 0}),
+        "pr_11": ("🧀 Сыр Пармезан (~55г)", {"cals": 220, "p": 19, "f": 15, "c": 0}),
+        "pr_12": ("🧀 Сыр Российский / Голландский (~60г)", {"cals": 220, "p": 15, "f": 17, "c": 0}),
+        "pr_13": ("🧀 Сыр Моцарелла (~75г)", {"cals": 190, "p": 14, "f": 14, "c": 1}),
+        "pr_14": ("🧀 Творожный сыр (Hochland/Almette) (~100г)", {"cals": 220, "p": 6, "f": 21, "c": 3}),
+    },
+    "cat_dairy_eggs": {
+        "pr_8": ("🥛 Творог 5% (~200г)", {"cals": 240, "p": 36, "f": 10, "c": 6}),
+        "pr_9": ("🥚 Яйца вареные / жареные (3 шт.)", {"cals": 210, "p": 18, "f": 15, "c": 1}),
+    },
+    "cat_other": {
+        "pr_15": ("🥤 Протеиновый изолят (1 мерн. ложка)", {"cals": 110, "p": 25, "f": 0, "c": 1}),
+    }
+}
+
 CARBS_TRAIN = {
-    "c1": ("🍚 Гречка / Рис отварные", TARGET_TRAIN),
-    "c2": ("🍝 Макароны отварные (из тв. сортов)", TARGET_TRAIN),
-    "c3": ("🍞 Черный хлеб", TARGET_TRAIN),
-    "c4": ("🍞 Хлеб бородинский", TARGET_TRAIN),
-    "c5": ("🫓 Тонкий лаваш", TARGET_TRAIN),
-    "c6": ("🍲 Овощной суп / Борщ / Щи", TARGET_TRAIN),
-    "c7": ("🍜 Суп Том Ям (с морепродуктами/курицей)", TARGET_TRAIN),
+    "ct_1": ("🍚 Гречка / Рис отварные (~300г)", TARGET_TRAIN),
+    "ct_2": ("🍝 Макароны отварные из тв. сортов (~280г)", TARGET_TRAIN),
+    "ct_3": ("🍞 Черный хлеб (4 куска, ~140г)", TARGET_TRAIN),
+    "ct_4": ("🍞 Хлеб бородинский (4 куска, ~140г)", TARGET_TRAIN),
+    "ct_5": ("🫓 Тонкий лаваш (большой лист, ~130г)", TARGET_TRAIN),
+    "ct_6": ("🍲 Овощной суп / Борщ / Щи (~500г)", TARGET_TRAIN),
+    "ct_7": ("🍜 Суп Том Ям (~450г)", TARGET_TRAIN),
     "skip_carb": ("⏭️ Пропустить углеводы", ZERO_CARB),
 }
 
-# Белки для Дня отдыха (нижняя норма)
-PROTEINS_REST = {
-    "pr1": ("🐟 Минтай (тушеный/запеченный)", TARGET_REST),
-    "pr2": ("🥩 Куриная грудка / индейка запеч.", TARGET_REST),
-    "pr3": ("🦐 Креветки / морской коктейль", TARGET_REST),
-    "pr4": ("🐟 Семга с/с или Скумбрия х/к", TARGET_REST),
-    "pr5": ("🥛 Творог 5%", TARGET_REST),
-    "pr6": ("🥚 Яйца вареные / жареные", TARGET_REST),
-    "pr7": ("🧀 Сыр Сулугуни", TARGET_REST),
-    "pr8": ("🧀 Сыр Пармезан", TARGET_REST),
-    "pr9": ("🧀 Сыр Российский", TARGET_REST),
-    "pr10": ("🧀 Сыр Голландский", TARGET_REST),
-    "pr11": ("🧀 Сыр Моцарелла", TARGET_REST),
-    "pr12": ("🧀 Творожный сыр (Hochland/Almette)", TARGET_REST),
-}
-
-# Углеводы для Дня отдыха
 CARBS_REST = {
-    "cr1": ("🍚 Гречка / Рис отварные", TARGET_REST),
-    "cr2": ("🍝 Макароны отварные (из тв. сортов)", TARGET_REST),
-    "cr3": ("🍞 Черный хлеб", TARGET_REST),
-    "cr4": ("🍞 Хлеб бородинский", TARGET_REST),
-    "cr5": ("🫓 Тонкий лаваш", TARGET_REST),
-    "cr6": ("🍲 Овощной суп / Борщ / Щи", TARGET_REST),
+    "cr_1": ("🍚 Гречка / Рис отварные (~180г)", TARGET_REST),
+    "cr_2": ("🍝 Макароны отварные из тв. сортов (~170г)", TARGET_REST),
+    "cr_3": ("🍞 Черный хлеб (2 куска, ~70г)", TARGET_REST),
+    "cr_4": ("🍞 Хлеб бородинский (2 куска, ~70г)", TARGET_REST),
+    "cr_5": ("🫓 Тонкий лаваш (~70г)", TARGET_REST),
+    "cr_6": ("🍲 Овощной суп / Борщ / Щи (~350г)", TARGET_REST),
     "skip_carb": ("⏭️ Пропустить углеводы", ZERO_CARB),
 }
 
-# Жиры, овощи, салаты и дополнительные опции
 FATS_VEG = {
-    "f1": ("🥗 Овощной салат (огурцы, помидоры)", {"cals": 0, "p": 0, "f": 0, "c": 0}),
-    "f2": ("🥬 Капуста квашеная", {"cals": 0, "p": 0, "f": 0, "c": 0}),
-    "f3": ("🥗 Квашеная капуста «фитнес» без сахара", {"cals": 0, "p": 0, "f": 0, "c": 0}),
-    "f4": ("🍠 Вареная свекла", {"cals": 0, "p": 0, "f": 0, "c": 0}),
-    "f5": ("🥕 Морковь свежая тертая", {"cals": 0, "p": 0, "f": 0, "c": 0}),
-    "f6": ("🥬 Капуста пекинская", {"cals": 0, "p": 0, "f": 0, "c": 0}),
-    "f7": ("🥒 Огурцы", {"cals": 0, "p": 0, "f": 0, "c": 0}),
-    "f8": ("🍅 Помидоры черри", {"cals": 0, "p": 0, "f": 0, "c": 0}),
-    "f9": ("🥑 Авокадо", {"cals": 0, "p": 0, "f": 0, "c": 0}),
-    "f10": ("🧈 Сливочное масло", {"cals": 0, "p": 0, "f": 0, "c": 0}),
-    "f11": ("🫒 Оливковое масло", {"cals": 0, "p": 0, "f": 0, "c": 0}),
-    "f12": ("🥜 Орехи (грецкие, миндаль, фундук)", {"cals": 0, "p": 0, "f": 0, "c": 0}),
-    "f13": ("🌱 Семена чиа / Псиллиум", {"cals": 0, "p": 0, "f": 0, "c": 0}),
-    "f14": ("🥛 Кефир 1%", {"cals": 0, "p": 0, "f": 0, "c": 0}),
+    "f_1": ("🥗 Овощной салат (огурцы, помидоры)", {"cals": 40, "p": 1, "f": 3, "c": 4}),
+    "f_2": ("🥬 Капуста квашеная", {"cals": 25, "p": 1, "f": 0, "c": 4}),
+    "f_3": ("🥗 Квашеная капуста «фитнес» без сахара", {"cals": 30, "p": 1, "f": 0, "c": 5}),
+    "f_4": ("🍠 Вареная свекла (~100г)", {"cals": 45, "p": 1, "f": 0, "c": 10}),
+    "f_5": ("🥕 Морковь свежая тертая (~100г)", {"cals": 35, "p": 1, "f": 0, "c": 8}),
+    "f_6": ("🥬 Капуста пекинская (~150г)", {"cals": 25, "p": 2, "f": 0, "c": 4}),
+    "f_7": ("🥒 Огурцы (~200г)", {"cals": 30, "p": 1, "f": 0, "c": 6}),
+    "f_8": ("🍅 Помидоры черри (~150г)", {"cals": 30, "p": 1, "f": 0, "c": 6}),
+    "f_9": ("🥑 Авокадо (~50г)", {"cals": 80, "p": 1, "f": 7, "c": 2}),
+    "f_10": ("🧈 Сливочное масло (10г)", {"cals": 75, "p": 0, "f": 8, "c": 0}),
+    "f_11": ("🫒 Оливковое масло (1 ч.л.)", {"cals": 45, "p": 0, "f": 5, "c": 0}),
+    "f_12": ("🥜 Орехи (~15г)", {"cals": 100, "p": 3, "f": 9, "c": 3}),
+    "f_13": ("🌱 Семена чиа / Псиллиум (1 ст.л.)", {"cals": 50, "p": 2, "f": 3, "c": 4}),
+    "f_14": ("🥛 Кефир 1% (250 мл)", {"cals": 100, "p": 7, "f": 2, "c": 10}),
 }
 
 @dp.message(Command("start"))
@@ -121,10 +161,7 @@ async def cmd_menu(message: types.Message, state: FSMContext):
     builder.button(text="🛋️ День отдыха (436 ккал/прием)", callback_data="day_rest")
     builder.adjust(1)
     
-    await message.answer(
-        "🎯 Какой сегодня день?",
-        reply_markup=builder.as_markup()
-    )
+    await message.answer("🎯 Какой сегодня день?", reply_markup=builder.as_markup())
     await state.set_state(MealState.waiting_for_day_type)
 
 @dp.callback_query(MealState.waiting_for_day_type, F.data.in_({"day_train", "day_rest"}))
@@ -136,36 +173,83 @@ async def process_day_choice(callback: types.CallbackQuery, state: FSMContext):
     day_name = "Тренировочный день" if is_training else "День отдыха"
     await callback.answer(f"Выбран: {day_name}")
     
-    proteins_pool = PROTEINS_TRAIN if is_training else PROTEINS_REST
-    
     builder = InlineKeyboardBuilder()
-    for code, (name, _) in proteins_pool.items():
-        builder.button(text=name, callback_data=f"prot_{code}")
+    for cat_code, cat_name in PROTEIN_CATEGORIES.items():
+        builder.button(text=cat_name, callback_data=f"protcat_{cat_code}")
     builder.button(text="❌ Отмена", callback_data="cancel_action")
     builder.adjust(1)
     
     await callback.message.edit_text(
         f"⚡ Режим: **{day_name}**\n"
         f"🎯 Цель на 1 прием: Б: {target['p']}г | Ж: {target['f']}г | У: {target['c']}г ({target['cals']} ккал)\n\n"
-        f"🍽️ Собираем **Прием пищи №1**.\nВыбери основной белок:",
+        f"🍽️ Собираем **Прием пищи №1**.\nВыбери категорию белка:",
         reply_markup=builder.as_markup()
     )
-    await state.set_state(MealState.choosing_protein)
+    await state.set_state(MealState.choosing_protein_category)
 
-@dp.callback_query(MealState.choosing_protein, F.data.startswith("prot_"))
-async def process_protein(callback: types.CallbackQuery, state: FSMContext):
-    code = callback.data.replace("prot_", "", 1)
+@dp.callback_query(MealState.choosing_protein_category, F.data.startswith("protcat_"))
+async def process_protein_category(callback: types.CallbackQuery, state: FSMContext):
+    cat_code = callback.data.replace("protcat_", "", 1)
     data = await state.get_data()
     is_train = data.get("is_training")
     
-    proteins_pool = PROTEINS_TRAIN if is_train else PROTEINS_REST
-    if code not in proteins_pool:
+    pool_by_cat = PROTEINS_TRAIN_BY_CAT if is_train else PROTEINS_REST_BY_CAT
+    items = pool_by_cat.get(cat_code, {})
+    
+    if not items:
+        await callback.answer("В этой категории пока пусто", show_alert=True)
+        return
+
+    await callback.answer("Категория выбрана")
+    
+    builder = InlineKeyboardBuilder()
+    for item_code, (item_name, _) in items.items():
+        builder.button(text=item_name, callback_data=f"protitem_{item_code}")
+    builder.button(text="⬅️ Назад к категориям", callback_data="back_to_prot_cats")
+    builder.adjust(1)
+    
+    await callback.message.edit_text(
+        "🥩 Выбери конкретный продукт:",
+        reply_markup=builder.as_markup()
+    )
+    await state.set_state(MealState.choosing_protein_item)
+
+@dp.callback_query(F.data == "back_to_prot_cats")
+async def back_to_protein_categories(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer()
+    builder = InlineKeyboardBuilder()
+    for cat_code, cat_name in PROTEIN_CATEGORIES.items():
+        builder.button(text=cat_name, callback_data=f"protcat_{cat_code}")
+    builder.button(text="❌ Отмена", callback_data="cancel_action")
+    builder.adjust(1)
+    
+    await callback.message.edit_text(
+        "🍽️ Выбери категорию белка:",
+        reply_markup=builder.as_markup()
+    )
+    await state.set_state(MealState.choosing_protein_category)
+
+@dp.callback_query(MealState.choosing_protein_item, F.data.startswith("protitem_"))
+async def process_protein_item(callback: types.CallbackQuery, state: FSMContext):
+    code = callback.data.replace("protitem_", "", 1)
+    data = await state.get_data()
+    is_train = data.get("is_training")
+    
+    pool_by_cat = PROTEINS_TRAIN_BY_CAT if is_train else PROTEINS_REST_BY_CAT
+    
+    found_item = None
+    for cat_code, items in pool_by_cat.items():
+        if code in items:
+            found_item = items[code]
+            break
+            
+    if not found_item:
         await callback.answer("Ошибка выбора", show_alert=True)
         return
         
-    protein_name, _ = proteins_pool[code]
-    await state.update_data(selected_protein=protein_name)
-    await callback.answer("Белок выбран")
+    protein_name, protein_vals = found_item
+    await state.update_data(selected_protein=protein_name, protein_vals=protein_vals)
+    await callback.answer("Продукт выбран")
     
     carbs_pool = CARBS_TRAIN if is_train else CARBS_REST
     
@@ -192,12 +276,12 @@ async def process_carb(callback: types.CallbackQuery, state: FSMContext):
         await callback.answer("Ошибка выбора", show_alert=True)
         return
         
-    carb_name, _ = carbs_pool[code]
+    carb_name, carb_vals = carbs_pool[code]
     
     if code == "skip_carb":
-        await state.update_data(selected_carb="Без углеводов (пропущено)")
+        await state.update_data(selected_carb="Без углеводов (пропущено)", carb_vals=ZERO_CARB)
     else:
-        await state.update_data(selected_carb=carb_name)
+        await state.update_data(selected_carb=carb_name, carb_vals=carb_vals)
         
     await callback.answer("Углеводы учтены")
     
@@ -209,7 +293,7 @@ async def process_carb(callback: types.CallbackQuery, state: FSMContext):
     
     display_carb_text = "Без углеводов" if code == "skip_carb" else carb_name
     await callback.message.edit_text(
-        f"✅ Гарнир: {display_carb_text}\n\n🥗 Выбери жиры или овощи:",
+        f"✅ Гарнир: {display_carb_text}\n\n🥗 Выбери жиры, овощи или добавки:",
         reply_markup=builder.as_markup()
     )
     await state.set_state(MealState.choosing_fat)
@@ -221,26 +305,28 @@ async def process_fat(callback: types.CallbackQuery, state: FSMContext):
         await callback.answer("Ошибка выбора", show_alert=True)
         return
         
-    fat_name, _ = FATS_VEG[code]
+    fat_name, fat_vals = FATS_VEG[code]
     data = await state.get_data()
     await callback.answer("Прием учтен")
     
-    target = data.get("target", TARGET_TRAIN)
+    p_vals = data.get("protein_vals", {"cals": 0, "p": 0, "f": 0, "c": 0})
+    c_vals = data.get("carb_vals", {"cals": 0, "p": 0, "f": 0, "c": 0})
     
-    meal_cals = target["cals"]
-    meal_p = target["p"]
-    meal_f = target["f"]
-    meal_uc = 0 if data.get("selected_carb") == "Без углеводов (пропущено)" else target["c"]
+    meal_cals = p_vals["cals"] + c_vals["cals"] + fat_vals["cals"]
+    meal_p = p_vals["p"] + c_vals["p"] + fat_vals["p"]
+    meal_f = p_vals["f"] + c_vals["f"] + fat_vals["f"]
+    meal_uc = p_vals["c"] + c_vals["c"] + fat_vals["c"]
 
+    target = data.get("target", TARGET_TRAIN)
     target_meal_cals = target["cals"]
     lower_bound = target_meal_cals * 0.9
     upper_bound = target_meal_cals * 1.1
 
     meal_warning = ""
     if meal_cals > upper_bound:
-        meal_warning = "\n⚠️ **Предупреждение:** Превышение нормы приема более чем на 10%!"
+        meal_warning = "\n⚠️ **Предупреждение:** Калорийность приема выше целевой более чем на 10%!"
     elif meal_cals < lower_bound:
-        meal_warning = "\n⚠️ **Предупреждение:** Недобор нормы приема более чем на 10%!"
+        meal_warning = "\n⚠️ **Предупреждение:** Калорийность приема ниже целевой более чем на 10%!"
 
     current_meal = data.get("current_meal", 1)
     meal_list = data.get("meal_data", [])
@@ -261,19 +347,18 @@ async def process_fat(callback: types.CallbackQuery, state: FSMContext):
 
     if current_meal < 3:
         await state.update_data(current_meal=current_meal + 1)
-        is_train = data.get("is_training")
-        proteins_pool = PROTEINS_TRAIN if is_train else PROTEINS_REST
+        
         builder = InlineKeyboardBuilder()
-        for p_code, (p_name, _) in proteins_pool.items():
-            builder.button(text=p_name, callback_data=f"prot_{p_code}")
+        for cat_code, cat_name in PROTEIN_CATEGORIES.items():
+            builder.button(text=cat_name, callback_data=f"protcat_{cat_code}")
         builder.button(text="❌ Отмена", callback_data="cancel_action")
         builder.adjust(1)
         
         await callback.message.answer(
-            response + f"\n👉 Переходим к **Приему пищи №{current_meal + 1}**. Выбери белок:",
+            response + f"\n👉 Переходим к **Приему пищи №{current_meal + 1}**. Выбери категорию белка:",
             reply_markup=builder.as_markup()
         )
-        await state.set_state(MealState.choosing_protein)
+        await state.set_state(MealState.choosing_protein_category)
     else:
         total_cals = sum(m["cals"] for m in meal_list)
         total_p = sum(m["p"] for m in meal_list)
