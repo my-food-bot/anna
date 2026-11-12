@@ -24,51 +24,48 @@ class MealState(StatesGroup):
     choosing_fat = State()
     waiting_for_analytics_period = State()
 
-# Целевые значения на 1 прием пищи
 TARGET_TRAIN = {"cals": 612, "p": 25, "f": 17, "c": 86}
 TARGET_REST = {"cals": 436, "p": 17, "f": 12, "c": 61}
 
-# Продукты для тренировочного дня (раздельно по позициям под цель)
+# Используем короткие ключи, чтобы callback_data не превышал 64 байта в Telegram
 PROTEINS_TRAIN = {
-    "🥩 Куриная грудка (~250г)": TARGET_TRAIN,
-    "🦃 Индейка (~250г)": TARGET_TRAIN,
-    "🥩 Говядина (~200г)": TARGET_TRAIN,
-    "🐟 Рыба / Лосось (~220г)": TARGET_TRAIN,
-    "🐟 Тунец (консерв., ~180г)": TARGET_TRAIN,
-    "🥤 Протеиновый изолят (1.5 мерн. ложки)": TARGET_TRAIN,
+    "p1": ("🥩 Куриная грудка (~250г)", TARGET_TRAIN),
+    "p2": ("🦃 Индейка (~250г)", TARGET_TRAIN),
+    "p3": ("🥩 Говядина (~200г)", TARGET_TRAIN),
+    "p4": ("🐟 Рыба / Лосось (~220г)", TARGET_TRAIN),
+    "p5": ("🐟 Тунец (консерв., ~180г)", TARGET_TRAIN),
+    "p6": ("🥤 Протеиновый изолят (1.5 мерн. ложки)", TARGET_TRAIN),
 }
 
 CARBS_TRAIN = {
-    "🍚 Рис / Гречка (готовые, ~250г)": TARGET_TRAIN,
-    "🍝 Макароны (готовые, ~250г)": TARGET_TRAIN,
-    "🥔 Картофель отварной (~300г)": TARGET_TRAIN,
-    "🍟 Картофель фри (аэрогриль, ~180г)": TARGET_TRAIN,
-    "🥔 Пюре картофельное на молоке (~300г)": TARGET_TRAIN,
+    "c1": ("🍚 Рис / Гречка (готовые, ~250г)", TARGET_TRAIN),
+    "c2": ("🍝 Макароны (готовые, ~250г)", TARGET_TRAIN),
+    "c3": ("🥔 Картофель отварной (~300г)", TARGET_TRAIN),
+    "c4": ("🍟 Картофель фри (аэрогриль, ~180г)", TARGET_TRAIN),
+    "c5": ("🥔 Пюре картофельное на молоке (~300г)", TARGET_TRAIN),
 }
 
-# Продукты для дня отдыха (раздельно по позициям под нижнюю норму)
 PROTEINS_REST = {
-    "🐟 Минтай (отварной/запеч., ~180г)": TARGET_REST,
-    "🐟 Тунец (консерв., ~130г)": TARGET_REST,
-    "🥚 Яйца (2 крупных шт.)": TARGET_REST,
-    "🥛 Творог (~180г)": TARGET_REST,
-    "🥩 Куриная грудка (~150г)": TARGET_REST,
-    "🦃 Индейка (~150г)": TARGET_REST,
+    "pr1": ("🐟 Минтай (отварной/запеч., ~180г)", TARGET_REST),
+    "pr2": ("🐟 Тунец (консерв., ~130г)", TARGET_REST),
+    "pr3": ("🥚 Яйца (2 крупных шт.)", TARGET_REST),
+    "pr4": ("🥛 Творог (~180г)", TARGET_REST),
+    "pr5": ("🥩 Куриная грудка (~150г)", TARGET_REST),
+    "pr6": ("🦃 Индейка (~150г)", TARGET_REST),
 }
 
 CARBS_REST = {
-    "🥔 Запеченный бэби-картофель (аэрогриль, ~150г)": TARGET_REST,
-    "🍞 Хлеб цельнозерновой (1 кусок)": TARGET_REST,
-    "🍚 Рис / Гречка (готовые, ~130г)": TARGET_REST,
-    "🍝 Макароны (готовые, ~130г)": TARGET_REST,
+    "cr1": ("🥔 Запеченный бэби-картофель (аэрогриль, ~150г)", TARGET_REST),
+    "cr2": ("🍞 Хлеб цельнозерновой (1 кусок)", TARGET_REST),
+    "cr3": ("🍚 Рис / Гречка (готовые, ~130г)", TARGET_REST),
+    "cr4": ("🍝 Макароны (готовые, ~130г)", TARGET_REST),
 }
 
-# Жиры и овощи (раздельно)
 FATS_VEG = {
-    "🫒 Оливковое масло (1 ч.л.)": {"cals": 0, "p": 0, "f": 0, "c": 0},
-    "🥑 Авокадо (четвертинка, ~40г)": {"cals": 0, "p": 0, "f": 0, "c": 0},
-    "🥜 Орехи (небольшая горсть, ~15г)": {"cals": 0, "p": 0, "f": 0, "c": 0},
-    "🥗 Свежие овощи (миска салата)": {"cals": 0, "p": 0, "f": 0, "c": 0},
+    "f1": ("🫒 Оливковое масло (1 ч.л.)", {"cals": 0, "p": 0, "f": 0, "c": 0}),
+    "f2": ("🥑 Авокадо (четвертинка, ~40г)", {"cals": 0, "p": 0, "f": 0, "c": 0}),
+    "f3": ("🥜 Орехи (небольшая горсть, ~15г)", {"cals": 0, "p": 0, "f": 0, "c": 0}),
+    "f4": ("🥗 Свежие овощи (миска салата)", {"cals": 0, "p": 0, "f": 0, "c": 0}),
 }
 
 @dp.message(Command("start"))
@@ -105,8 +102,8 @@ async def process_day_choice(callback: types.CallbackQuery, state: FSMContext):
     proteins_pool = PROTEINS_TRAIN if is_training else PROTEINS_REST
     
     builder = InlineKeyboardBuilder()
-    for prod in proteins_pool.keys():
-        builder.button(text=prod, callback_data=f"prot_{prod}")
+    for code, (name, _) in proteins_pool.items():
+        builder.button(text=name, callback_data=f"prot_{code}")
     builder.button(text="❌ Отмена", callback_data="cancel_action")
     builder.adjust(1)
     
@@ -120,46 +117,68 @@ async def process_day_choice(callback: types.CallbackQuery, state: FSMContext):
 
 @dp.callback_query(MealState.choosing_protein, F.data.startswith("prot_"))
 async def process_protein(callback: types.CallbackQuery, state: FSMContext):
-    choice = callback.data.replace("prot_", "", 1)
-    await state.update_data(selected_protein=choice)
+    code = callback.data.replace("prot_", "", 1)
+    data = await state.get_data()
+    is_train = data.get("is_training")
+    
+    proteins_pool = PROTEINS_TRAIN if is_train else PROTEINS_REST
+    if code not in proteins_pool:
+        await callback.answer("Ошибка выбора", show_alert=True)
+        return
+        
+    protein_name, _ = proteins_pool[code]
+    await state.update_data(selected_protein=protein_name)
     await callback.answer("Белок выбран")
     
-    data = await state.get_data()
-    carbs_pool = CARBS_TRAIN if data.get("is_training") else CARBS_REST
+    carbs_pool = CARBS_TRAIN if is_train else CARBS_REST
     
     builder = InlineKeyboardBuilder()
-    for prod in carbs_pool.keys():
-        builder.button(text=prod, callback_data=f"carb_{prod}")
+    for c_code, (c_name, _) in carbs_pool.items():
+        builder.button(text=c_name, callback_data=f"carb_{c_code}")
     builder.button(text="❌ Отмена", callback_data="cancel_action")
     builder.adjust(1)
     
     await callback.message.edit_text(
-        f"✅ Белок: {choice}\n\n🥔 Выбери гарнир / углеводы:",
+        f"✅ Белок: {protein_name}\n\n🥔 Выбери гарнир / углеводы:",
         reply_markup=builder.as_markup()
     )
     await state.set_state(MealState.choosing_carb)
 
 @dp.callback_query(MealState.choosing_carb, F.data.startswith("carb_"))
 async def process_carb(callback: types.CallbackQuery, state: FSMContext):
-    choice = callback.data.replace("carb_", "", 1)
-    await state.update_data(selected_carb=choice)
+    code = callback.data.replace("carb_", "", 1)
+    data = await state.get_data()
+    is_train = data.get("is_training")
+    
+    carbs_pool = CARBS_TRAIN if is_train else CARBS_REST
+    if code not in carbs_pool:
+        await callback.answer("Ошибка выбора", show_alert=True)
+        return
+        
+    carb_name, _ = carbs_pool[code]
+    await state.update_data(selected_carb=carb_name)
     await callback.answer("Гарнир выбран")
     
     builder = InlineKeyboardBuilder()
-    for prod in FATS_VEG.keys():
-        builder.button(text=prod, callback_data=f"fat_{prod}")
+    for f_code, (f_name, _) in FATS_VEG.items():
+        builder.button(text=f_name, callback_data=f"fat_{f_code}")
     builder.button(text="❌ Отмена", callback_data="cancel_action")
     builder.adjust(1)
     
     await callback.message.edit_text(
-        f"✅ Гарнир: {choice}\n\n🥗 Выбери жиры или овощи:",
+        f"✅ Гарнир: {carb_name}\n\n🥗 Выбери жиры или овощи:",
         reply_markup=builder.as_markup()
     )
     await state.set_state(MealState.choosing_fat)
 
 @dp.callback_query(MealState.choosing_fat, F.data.startswith("fat_"))
 async def process_fat(callback: types.CallbackQuery, state: FSMContext):
-    choice = callback.data.replace("fat_", "", 1)
+    code = callback.data.replace("fat_", "", 1)
+    if code not in FATS_VEG:
+        await callback.answer("Ошибка выбора", show_alert=True)
+        return
+        
+    fat_name, _ = FATS_VEG[code]
     data = await state.get_data()
     await callback.answer("Прием учтен")
     
@@ -169,7 +188,6 @@ async def process_fat(callback: types.CallbackQuery, state: FSMContext):
     meal_f = target["f"]
     meal_uc = target["c"]
 
-    # Проверка отклонений на КАЖДЫЙ прием пищи (±10%)
     target_meal_cals = target["cals"]
     lower_bound = target_meal_cals * 0.9
     upper_bound = target_meal_cals * 1.1
@@ -192,7 +210,7 @@ async def process_fat(callback: types.CallbackQuery, state: FSMContext):
         f"✅ **Прием пищи №{current_meal} готов!**\n"
         f"• {data.get('selected_protein')}\n"
         f"• {data.get('selected_carb')}\n"
-        f"• {choice}\n\n"
+        f"• {fat_name}\n\n"
         f"📊 КБЖУ приема: {meal_cals} ккал | Б: {meal_p}г | Ж: {meal_f}г | У: {meal_uc}г"
         f"{meal_warning}\n"
     )
@@ -202,8 +220,8 @@ async def process_fat(callback: types.CallbackQuery, state: FSMContext):
         is_train = data.get("is_training")
         proteins_pool = PROTEINS_TRAIN if is_train else PROTEINS_REST
         builder = InlineKeyboardBuilder()
-        for prod in proteins_pool.keys():
-            builder.button(text=prod, callback_data=f"prot_{prod}")
+        for p_code, (p_name, _) in proteins_pool.items():
+            builder.button(text=p_name, callback_data=f"prot_{p_code}")
         builder.button(text="❌ Отмена", callback_data="cancel_action")
         builder.adjust(1)
         
